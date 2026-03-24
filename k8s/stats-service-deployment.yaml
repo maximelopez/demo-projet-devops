@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stats-service
+  namespace: demo-devops
+  labels:
+    app: stats-service
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: stats-service
+  template:
+    metadata:
+      labels:
+        app: stats-service
+    spec:
+      containers:
+      - name: stats-service
+        image: stats-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - configMapRef:
+            name: stats-config
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: stats-config
+              key: PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: stats-config
+              key: NODE_ENV
+        - name: TASKS_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: stats-config
+              key: TASKS_SERVICE_URL

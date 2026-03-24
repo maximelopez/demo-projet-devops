@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: demo-devops
+data:
+  PORT: "80"
+  NODE_ENV: "production"
+  VITE_TASKS_API_URL: "http://tasks-service:80"
+  VITE_STATS_API_URL: "http://stats-service:81"

@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGDATA: /var/lib/postgresql/18/docker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./tasks-service/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  tasks-service:
+    build: ./tasks-service
+    image: tasks-service:${DOCKER_TAG:-latest}
+    container_name: tasks-service
+    environment:
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    ports:
+      - "3001:3001"
+    networks:
+      - app-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  stats-service:
+    build: ./stats-service
+    image: stats-service:${DOCKER_TAG:-latest}
+    container_name: stats-service
+    environment:
+      PORT: 3002
+      NODE_ENV: ${NODE_ENV}
+      TASKS_SERVICE_URL: http://tasks-service:3001
+    ports:
+      - "3002:3002"
+    networks:
+      - app-network
+    depends_on:
+      - tasks-service
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: frontend:${DOCKER_TAG:-latest}
+    container_name: frontend
+    environment:
+      VITE_TASKS_API_URL: http://localhost:3001/api/tasks
+      VITE_STATS_API_URL: http://localhost:3002/api/stats
+    ports:
+      - "8081:80"
+    depends_on:
+      - tasks-service
+      - stats-service
+    restart: unless-stopped
+
+  registry:
+    image: registry:3.0.0
+    container_name: local-registry
+    ports:
+    - "5000:5000"
+    volumes:
+    - registry-data:/var/lib/registry
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+    name: task-manager-network
+
+volumes:
+  postgres-data:
+    name: task-manager-postgres-data
+  registry-data:
+    name: task-manager-registry-data

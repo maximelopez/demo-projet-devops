@@ -1,0 +1,91 @@
+version: '3'
+
+vars:
+  NODE_SERVICES: tasks-service stats-service
+  ALL_SERVICES: tasks-service stats-service frontend
+  DOCKER_REGISTRY: localhost:5000
+  DOCKER_TAG: latest
+  VERSION: 1.0.0
+
+tasks:
+  default:
+    desc: Affiche les tâches disponibles
+    cmds:
+    - task --list
+    silent: true
+
+  install:
+    desc: Installe les dépendances de tous les services
+    cmds:
+    - echo "📦 Installation des dépendances..."
+    - cd tasks-service && npm install
+    - cd stats-service && npm install
+    - cd frontend && npm install
+    - echo "✅ Dépendances installées"
+
+  test:
+    desc: Lance les tests de tous les services
+    deps: [install]
+    cmds:
+    - echo "🧪 Lancement des tests..."
+    - cd tasks-service && npm test
+    - cd stats-service && npm test
+    - echo "✅ Tous les tests sont passés"
+
+  clean:
+    desc: Nettoie les dossiers node_modules et dist
+    cmds:
+    - echo "🧹 Nettoyage..."
+    - rm -rf tasks-service/node_modules tasks-service/dist
+    - rm -rf stats-service/node_modules stats-service/dist
+    - rm -rf frontend/node_modules frontend/dist
+    - echo "✅ Nettoyage terminé"
+
+  build:docker:
+    desc: Build les images avec docker build
+    cmds:
+    - docker build -t tasks-service:latest ./tasks-service
+    - docker build -t stats-service:latest ./stats-service
+    - docker build -t frontend:latest ./frontend
+
+  build:compose:
+    desc: Build les images avec docker compose
+    env:
+      DOCKER_TAG: "{{.DOCKER_TAG}}"
+    cmds:
+    - echo "🔨 Build avec Docker Compose..."
+    - docker compose build
+    - echo "✅ Build terminé"
+
+  build:
+    desc: Build les images (méthode par défaut)
+    cmds:
+    - task: build:compose
+
+  tag:
+    desc: Tag toutes les images avec la version pour le registry
+    cmds:
+    - echo "🏷️ Tag des images avec la version {{.VERSION}}..."
+    - docker tag tasks-service:{{.DOCKER_TAG}} {{.DOCKER_REGISTRY}}/tasks-service:{{.VERSION}}
+    - docker tag stats-service:{{.DOCKER_TAG}} {{.DOCKER_REGISTRY}}/stats-service:{{.VERSION}}
+    - docker tag frontend:{{.DOCKER_TAG}} {{.DOCKER_REGISTRY}}/frontend:{{.VERSION}}
+    - echo "✅ Tag terminé"
+  
+  push:
+    desc: Push toutes les images vers le registry local
+    cmds:
+    - echo "📤 Push des images vers {{.DOCKER_REGISTRY}}..."
+    - docker push {{.DOCKER_REGISTRY}}/tasks-service:{{.VERSION}}
+    - docker push {{.DOCKER_REGISTRY}}/stats-service:{{.VERSION}}
+    - docker push {{.DOCKER_REGISTRY}}/frontend:{{.VERSION}}
+    - echo "✅ Push terminé"
+  
+  pull:
+    desc: Pull toutes les images depuis le registry local
+    cmds:
+    - echo "📥 Pull des images depuis {{.DOCKER_REGISTRY}}..."
+    - docker pull {{.DOCKER_REGISTRY}}/tasks-service:{{.VERSION}}
+    - docker pull {{.DOCKER_REGISTRY}}/stats-service:{{.VERSION}}
+    - docker pull {{.DOCKER_REGISTRY}}/frontend:{{.VERSION}}
+    - echo "✅ Pull terminé"
+  
