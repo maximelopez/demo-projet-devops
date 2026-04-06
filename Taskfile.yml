@@ -132,7 +132,7 @@ tasks:
     - docker compose up -d postgres registry
     - task: lint
     - task: test
-    - task: build:compose
+    - task: build
     - task: tag
     - task: push
     - task: deploy

@@ -57,7 +57,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_TASKS_API_URL: http://localhost:3001/api/tasks
+        VITE_STATS_API_URL: http://localhost:3002/api/stats
     image: frontend:${DOCKER_TAG:-latest}
     container_name: frontend
     environment:
