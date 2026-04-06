@@ -46,7 +46,11 @@ tasks:
     cmds:
     - docker build -t tasks-service:latest ./tasks-service
     - docker build -t stats-service:latest ./stats-service
-    - docker build -t frontend:latest ./frontend
+    - docker build \
+      -t frontend:latest \
+      --build-arg VITE_TASKS_API_URL=http://localhost:30080/api/tasks \
+      --build-arg VITE_STATS_API_URL=http://localhost:30081/api/stats \
+      ./frontend
 
   build:compose:
     desc: Build les images avec docker compose
@@ -60,7 +64,7 @@ tasks:
   build:
     desc: Build les images (méthode par défaut)
     cmds:
-    - task: build:compose
+    - task: build:docker
 
   tag:
     desc: Tag toutes les images avec la version pour le registry
@@ -89,3 +93,18 @@ tasks:
     - docker pull {{.DOCKER_REGISTRY}}/frontend:{{.VERSION}}
     - echo "✅ Pull terminé"
   
+  # déploiement Kubernetes
+  k8s:tasks-service:apply:
+    desc: Déploie tasks-service
+    cmds:
+    - kubectl apply -f k8s/tasks-service/
+
+  k8s:stats-service:apply:
+    desc: Déploie stats-service
+    cmds:
+    - kubectl apply -f k8s/stats-service/
+
+  k8s:frontend:apply:
+    desc: Déploie frontend
+    cmds:
+    - kubectl apply -f k8s/frontend/
