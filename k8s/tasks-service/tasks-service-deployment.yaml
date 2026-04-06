@@ -22,8 +22,7 @@ spec:
     spec:
       containers:
       - name: tasks-service
-        image: tasks-service:latest
-        imagePullPolicy: Never
+        image: localhost:5001/tasks-service:1.0.0
         ports:
         - containerPort: 3000
         envFrom:

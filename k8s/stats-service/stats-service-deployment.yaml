@@ -22,8 +22,7 @@ spec:
     spec:
       containers:
       - name: stats-service
-        image: stats-service:latest
-        imagePullPolicy: Never
+        image: localhost:5001/stats-service:1.0.0
         ports:
         - containerPort: 3000
         envFrom:

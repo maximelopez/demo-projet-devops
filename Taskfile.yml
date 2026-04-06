@@ -3,7 +3,7 @@ version: '3'
 vars:
   NODE_SERVICES: tasks-service stats-service
   ALL_SERVICES: tasks-service stats-service frontend
-  DOCKER_REGISTRY: localhost:5000
+  DOCKER_REGISTRY: localhost:5001
   DOCKER_TAG: latest
   VERSION: 1.0.0
 
@@ -32,6 +32,16 @@ tasks:
     - cd stats-service && npm test
     - echo "✅ Tous les tests sont passés"
 
+  lint:
+    desc: Lance les linters de tous les services
+    deps: [install]
+    cmds:
+    - echo "🔍 Lancement des linters..."
+    - cd tasks-service && npm run lint --if-present
+    - cd stats-service && npm run lint --if-present
+    - cd frontend && npm run lint --if-present
+    - echo "✅ Linters terminés"
+
   clean:
     desc: Nettoie les dossiers node_modules et dist
     cmds:
@@ -46,11 +56,7 @@ tasks:
     cmds:
     - docker build -t tasks-service:latest ./tasks-service
     - docker build -t stats-service:latest ./stats-service
-    - docker build \
-      -t frontend:latest \
-      --build-arg VITE_TASKS_API_URL=http://localhost:30080/api/tasks \
-      --build-arg VITE_STATS_API_URL=http://localhost:30081/api/stats \
-      ./frontend
+    - docker build -t frontend:latest --build-arg VITE_TASKS_API_URL=http://localhost:30080/api/tasks --build-arg VITE_STATS_API_URL=http://localhost:30081/api/stats ./frontend
 
   build:compose:
     desc: Build les images avec docker compose
@@ -108,3 +114,26 @@ tasks:
     desc: Déploie frontend
     cmds:
     - kubectl apply -f k8s/frontend/
+
+  deploy:
+    desc: Déploie toute l'application sur Kubernetes
+    cmds:
+    - echo "🚀 Déploiement global sur Kubernetes..."
+    - task: k8s:tasks-service:apply
+    - task: k8s:stats-service:apply
+    - task: k8s:frontend:apply
+    - echo "✅ Déploiement réussi !"
+
+  pipeline:
+    desc: Exécute automatiquement toute la chaîne CI/CD requise
+    cmds:
+    - echo "⚡ Démarrage du pipeline complet..."
+    - echo "🏗️ Allumage de l'infrastructure de base (BDD et Registry)..."
+    - docker compose up -d postgres registry
+    - task: lint
+    - task: test
+    - task: build:compose
+    - task: tag
+    - task: push
+    - task: deploy
+    - echo "🎉 Pipeline DevOps achevé avec succès !"

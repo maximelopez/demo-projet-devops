@@ -74,7 +74,7 @@ services:
     image: registry:3.0.0
     container_name: local-registry
     ports:
-    - "5000:5000"
+    - "5001:5000"
     volumes:
     - registry-data:/var/lib/registry
     restart: unless-stopped
